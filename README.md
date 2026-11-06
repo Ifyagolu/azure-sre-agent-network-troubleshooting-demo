@@ -17,25 +17,11 @@ NSG Flow Logs are legacy: new creation stopped June 30, 2025, and retirement is 
 
 ## Architecture
 
-```text
-Client Windows VM ---- TCP/80 over VNet peering ---- Windows VM / IIS
-       |                                                |
-  Client VNet + NSG                                Workload VNet + NSG
-       +---------- Virtual Network Flow Logs -----------+
-                              |
-                        Azure Storage
-                              |
-                       Traffic Analytics
-                              |
-                 Log Analytics: NTANetAnalytics
-                              ^
-          AMA + Windows Event Logs DCR -> Event
-                              |
-                    Azure SRE Agent queries
-                    telemetry + configuration
+![Architecture Overview](Architecture-overview.png)
 
-Optional: Connection Monitor -> continuous TCP probes + workspace results
-```
+The demo correlates passive network and application telemetry with Azure configuration to support AI-assisted investigation. Virtual Network Flow Logs and application telemetry provide evidence in Log Analytics, while Connection Monitor can optionally add active connectivity testing. Azure SRE Agent is configured separately to investigate and correlate the available evidence.
+
+For additional implementation detail, see architecture.md.
 
 Defaults: two Windows Server 2022 Datacenter Azure Edition VMs, `Standard_D2as_v6`, client `10.10.0.0/16` / subnet `10.10.1.0/24`, workload `10.20.0.0/16` / subnet `10.20.1.0/24`. CIDRs and VM size are parameters. Private addresses are dynamic and always read from deployment outputs.
 
