@@ -53,11 +53,24 @@ Check the [deployment guide](./DEPLOYMENT.md) for authentication, configuration,
 
 ## Deployment workflow
 
-Run local-only validation first; this does not need an Azure login or VM password:
+Start with local/static validation, then review readiness before enabling deployment:
+
+| Command | Purpose | Azure impact |
+|---|---|---|
+| [`.\scripts\test-local.ps1`](./scripts/test-local.ps1) | Runs local/static repository validation, including code, Bicep, PowerShell and safety-contract checks. | None. Does not deploy resources or require live Azure changes. |
+| [`.\scripts\test-prerequisites.ps1`](./scripts/test-prerequisites.ps1) | Performs pre-deployment readiness checks against the selected Azure environment. | Read-only Azure checks. Does not deploy the demo. |
+| [`.\scripts\deploy.ps1`](./scripts/deploy.ps1) | Deploys the Azure SRE Agent network troubleshooting demo infrastructure using the repository's Bicep deployment. | Creates/configures Azure resources and can incur Azure charges. |
+
+The Azure impacts above apply when Azure execution is explicitly enabled with `-Execute`. Without that switch, the prerequisite and deployment scripts perform local checks only. The commands shown below do not contact Azure or require an Azure login or VM password:
 
 ```powershell
 .\scripts\test-local.ps1
 .\scripts\test-prerequisites.ps1
+```
+
+Before enabling deployment, review [DEPLOYMENT.md](./DEPLOYMENT.md), confirm the correct Azure subscription/context, understand the resources being created, and configure the required secure environment variables.
+
+```powershell
 .\scripts\deploy.ps1
 ```
 
