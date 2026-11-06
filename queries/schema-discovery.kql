@@ -1,0 +1,6 @@
+// Gate 1: run before investigative queries. Inspect live names and types.
+// FlowStatus, if present, is supplementary and is not required by any query in this folder.
+NTANetAnalytics
+| getschema
+| project ColumnName, ColumnOrdinal, DataType, ColumnType
+| order by ColumnOrdinal asc

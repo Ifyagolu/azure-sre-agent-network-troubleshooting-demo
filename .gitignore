@@ -1,0 +1,30 @@
+# Local deployment and validation evidence
+evidence/
+scripts/deployment-context.json
+deployment-context*.json
+scripts/.main.validation.json
+scripts/.connection-monitor.validation.json
+*.local.bicepparam
+*.local.json
+
+# Generated Bicep output
+infra/**/*.json
+
+# Environment files and credential material
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+*.cer
+
+# Local operational output
+*.log
+*.transcript.txt
+*.zip
+
+# Internal working documents
+*.docx
+prompt.txt
+PHASE2-IMPLEMENTATION-PLAN.md

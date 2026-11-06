@@ -1,0 +1,52 @@
+// Keep ActionValidated false until live schema and sample inspection proves Action semantics.
+let ActionValidated = false;
+let FlowStatusValidated = false;
+NTANetAnalytics
+| where TimeGenerated > ago(24h)
+| extend
+    SourceIp = tostring(column_ifexists("SrcIp", "")),
+    DestinationIp = tostring(column_ifexists("DestIp", "")),
+    DestinationPort = tostring(column_ifexists("DestPort", "")),
+    Protocol = tostring(column_ifexists("L4Protocol", "")),
+    ActionObserved = tolower(tostring(column_ifexists("Action", ""))),
+    FlowStatusObserved = tolower(tostring(column_ifexists("FlowStatus", ""))),
+    AllowedIn = column_ifexists("AllowedInFlows", long(null)),
+    AllowedOut = column_ifexists("AllowedOutFlows", long(null)),
+    DeniedIn = column_ifexists("DeniedInFlows", long(null)),
+    DeniedOut = column_ifexists("DeniedOutFlows", long(null)),
+    AclGroupObserved = tostring(column_ifexists("AclGroup", "")),
+    AclRuleObserved = tostring(column_ifexists("AclRule", "")),
+    TargetObserved = tostring(column_ifexists("TargetResourceId", "")),
+    FlowStartObserved = todatetime(column_ifexists("FlowStartTime", "")),
+    FlowEndObserved = todatetime(column_ifexists("FlowEndTime", ""))
+| extend
+    AllowedCount = coalesce(AllowedIn, 0) + coalesce(AllowedOut, 0),
+    DeniedCount = coalesce(DeniedIn, 0) + coalesce(DeniedOut, 0),
+    CounterEvidencePresent = isnotnull(AllowedIn) or isnotnull(AllowedOut) or isnotnull(DeniedIn) or isnotnull(DeniedOut)
+| extend
+    ActionClassification = case(
+        ActionValidated and ActionObserved in ("deny", "denied", "d"), "denied",
+        ActionValidated and ActionObserved in ("allow", "allowed", "a"), "allowed",
+        "unclassified"),
+    FlowStatusClassification = case(
+        FlowStatusValidated and FlowStatusObserved in ("deny", "denied", "d"), "denied",
+        FlowStatusValidated and FlowStatusObserved in ("allow", "allowed", "a"), "allowed",
+        "unclassified"),
+    CounterClassification = case(
+        CounterEvidencePresent and DeniedCount > 0 and AllowedCount == 0, "denied",
+        CounterEvidencePresent and AllowedCount > 0 and DeniedCount == 0, "allowed",
+        CounterEvidencePresent and AllowedCount > 0 and DeniedCount > 0, "mixed",
+        "unclassified")
+| extend EvidenceClassification = case(
+    ActionClassification != "unclassified" and CounterClassification != "unclassified" and ActionClassification != CounterClassification, "unclassified",
+    ActionClassification != "unclassified" and FlowStatusClassification != "unclassified" and ActionClassification != FlowStatusClassification, "unclassified",
+    CounterClassification != "unclassified" and FlowStatusClassification != "unclassified" and CounterClassification != FlowStatusClassification, "unclassified",
+    ActionClassification != "unclassified", ActionClassification,
+    CounterClassification != "unclassified", CounterClassification,
+    FlowStatusClassification != "unclassified", FlowStatusClassification,
+    "unclassified")
+| project TimeGenerated, FlowStartObserved, FlowEndObserved, SourceIp, DestinationIp,
+    DestinationPort, Protocol, EvidenceClassification, ActionObserved, FlowStatusObserved,
+    AllowedIn, AllowedOut, DeniedIn, DeniedOut, AclGroupObserved, AclRuleObserved, TargetObserved
+| order by TimeGenerated desc
+| take 200

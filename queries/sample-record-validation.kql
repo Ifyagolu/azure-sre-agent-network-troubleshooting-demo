@@ -1,0 +1,4 @@
+// Gate 2: inspect values without applying allow/deny classification.
+NTANetAnalytics
+| where TimeGenerated > ago(24h)
+| take 20

@@ -1,0 +1,17 @@
+// Health evidence is independent of flow classification. No record means unknown, not stopped.
+let WindowStart = todatetime("__START_UTC__");
+let WindowEnd = todatetime("__END_UTC__");
+let WorkloadResourceId = "__WORKLOAD_VM_ID__";
+Event
+| where TimeGenerated between (WindowStart .. WindowEnd)
+| where EventLog =~ "Application"
+| where Source =~ "SRE-Network-Demo"
+| where _ResourceId =~ WorkloadResourceId
+| extend EvidenceMessage = strcat(tostring(RenderedDescription), " ", tostring(Message))
+| where EvidenceMessage has "demo_health"
+| extend IisState = extract(@"iis_state=([A-Za-z]+)", 1, EvidenceMessage),
+    Scenario = extract(@"scenario=([A-Za-z0-9_-]+)", 1, EvidenceMessage),
+    MarkerUtc = extract(@"utc=([^\s]+)", 1, EvidenceMessage)
+| project TimeGenerated, Computer, EventLog, Source, EventID, EventLevelName,
+    Scenario, IisState, MarkerUtc, EvidenceMessage, _ResourceId
+| order by TimeGenerated asc
